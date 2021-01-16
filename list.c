@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include "list.h"
+#include "memoryStructure.h"
+
+extern unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
+extern void (*setMemoryAttribute) (memoryStructure,int,unsigned int); 
 
 pageHash pageHashInitialize(int numBuckets) {
 
@@ -8,11 +12,13 @@ pageHash pageHashInitialize(int numBuckets) {
     return bzipHash;
 }
 
-int searchPage(unsigned int page, pageHash Hash, int numBuckets, unsigned int* memory) {
+int searchPage(unsigned int page, pageHash Hash, int numBuckets, memoryStructure memory) {
 
     int key,frameIndex;
     listnode *currentNode,*lastNode;
+    static unsigned int counter=0;
 
+    counter++;
     key=hashFunction(page)%numBuckets;
 
     /*Alloc first node of list*/
@@ -23,7 +29,7 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, unsigned int* m
         Hash[key]->page=page;
         Hash[key]->nextblock=NULL;
         /*Find proper frame*/
-        Hash[key]->frame=replacementAlgorithm(memory,page);
+        Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
         return Hash[key]->frame;
     }
 
@@ -33,6 +39,7 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, unsigned int* m
         if (currentNode->page==page) {
 
             /*probably does something here*/
+            (*setMemoryAttribute)(memory,currentNode->frame,counter);
             return currentNode->frame;
         }
         lastNode=currentNode;
@@ -45,11 +52,11 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, unsigned int* m
     lastNode->nextblock->page=page;
     lastNode->nextblock->nextblock=NULL;
     /*Find proper frame*/
-    lastNode->nextblock->frame=replacementAlgorithm(memory,page);
+    lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
     return lastNode->nextblock->frame;
 }
 
-int deletePage(unsigned int page, pageHash Hash, int numBuckets, unsigned int* memory) {
+int deletePage(unsigned int page, pageHash Hash, int numBuckets) {
 
     int key;
     listnode *currentNode, *lastNode;
