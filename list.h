@@ -10,8 +10,8 @@ typedef struct listnode{
 typedef listnode** pageHash;
 
 pageHash pageHashInitialize(int);
-int searchPage(unsigned int, pageHash, int);
-int deletePage(unsigned int, pageHash, int);
-int pageHashDestroy(pageHash);
+int searchPage(unsigned int, pageHash, int, unsigned int*);
+int deletePage(unsigned int, pageHash, int, unsigned int*);
+int pageHashDestroy(pageHash, int);
 
 #endif

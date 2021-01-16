@@ -7,7 +7,7 @@
 
 int main(int argc, char* argv[]) {
 
-    int framesCount,q;
+    int framesCount,q,frame;
     FILE *bzipFile,*gccFile;
     unsigned int address,page,offset;
     pageHash bzipHash, gccHash;
@@ -54,10 +54,7 @@ int main(int argc, char* argv[]) {
             page=address>>12;
             offset=address<<20;
 
-            if (searchPage(page,bzipHash)) {
-                printf("Error: insertion in bzip hash failed.\n");
-                return 1;
-            }
+            frame=searchPage(page,bzipHash,NUMBUCKETS,memory);
         }
 
         /*q traces for gcc*/
@@ -71,10 +68,7 @@ int main(int argc, char* argv[]) {
             page=address>>12;
             offset=address<<20;
 
-            if (searchPage(page,gccHash)) {
-                printf("Error: insertion in gcc hash failed.\n");
-                return 1;
-            }
+            frame=searchPage(page,gccHash,NUMBUCKETS,memory);
         }
     }
 }
