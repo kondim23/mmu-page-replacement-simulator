@@ -20,11 +20,11 @@ void memory_setReferenceBit(memoryStructure memory, int frame, unsigned int valu
 int memory_lru(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
     int minIndex=-1;
-    unsigned int minCounter=-1;
+    unsigned int minCounter=0;
 
     for (int i=0 ; i<numFrames ; i++) {
 
-        if (memory[i].LRUcounter<minCounter || minCounter==-1) {
+        if (memory[i].LRUcounter<=minCounter || minIndex==-1) {
             minIndex=i;
             minCounter=memory[i].LRUcounter;
             if (memory[i].LRUcounter==0) break;

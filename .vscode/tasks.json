@@ -10,7 +10,7 @@
 				"${file}",
 				"-o",
 				"${fileDirname}/${fileBasenameNoExtension}",
-				"${fileDirname}/list.c",
+				"${fileDirname}/pageTable.c",
 				"${fileDirname}/memoryStructure.c"
 			],
 			"options": {

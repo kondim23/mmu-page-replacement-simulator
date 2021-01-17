@@ -12,9 +12,9 @@ int numFrames,numBuckets=100;
 
 int main(int argc, char* argv[]) {
 
-    int q;
+    int q,frame;
     FILE *bzipFile,*gccFile;
-    unsigned int address,page,offset,frame, counter=0;
+    unsigned int address,page,offset, counter=0;
     pageHash bzipHash, gccHash;
     hashnode* Node;
     bool running,Replacement;
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     /*Checking for proper input.*/
 
     if (argc!=4 || (strcmp(argv[1],"lru") && strcmp(argv[1],"secondChance")) || atoi(argv[2])<1 || atoi(argv[3])<1) {
-        printf("Please provide proper arguments.\n");
+        printf("User did not provide proper arguments.\n");
         return 1;
     }
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
             counter++;
 
             page=address>>12;
-            offset=address<<20;
+            offset=address<<20>>20;
 
             if ((frame=hash_searchPage(page,bzipHash,&Node))<0) {
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
                 hash_setFrame(Node,frame);
             }
             else (*memory_setMemoryAttribute)(memory,frame,counter);
-            printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
+            printf("Physical address: %08x\n",(unsigned int)(frame*4096+offset));
         }
 
         /*q traces for gcc*/
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
             counter++;
 
             page=address>>12;
-            offset=address<<20;
+            offset=address<<20>>20;
 
             if ((frame=hash_searchPage(page,gccHash,&Node))<0) {
 
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
                 hash_setFrame(Node,frame);
             }
             else (*memory_setMemoryAttribute)(memory,frame,counter);
-            printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
+            printf("Physical address: %08x\n",(unsigned int)(frame*4096+offset));
         }
     }
 

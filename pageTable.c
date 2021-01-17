@@ -24,7 +24,7 @@ int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
     int key;
     hashnode *currentNode,*lastNode;
     
-    key=hashFunction(page)%numBuckets;
+    key=hash_function(page)%numBuckets;
 
     /*Alloc first node of list*/
     if (Hash[key]==NULL) {
@@ -78,7 +78,7 @@ int hash_removePage(unsigned int page, pageHash Hash) {
     int key;
     hashnode *currentNode, *lastNode;
 
-    key=hashFunction(page)%numBuckets;
+    key=hash_function(page)%numBuckets;
 
     /*Checks for empty list*/
     if (Hash[key]==NULL) {
