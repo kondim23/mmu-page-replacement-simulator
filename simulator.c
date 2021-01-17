@@ -2,15 +2,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "list.h"
+#include "pageTable.h"
 #include "memoryStructure.h"
 
-#define NUMBUCKETS 100
+unsigned int (*memory_replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,bool*);
+void (*memory_setMemoryAttribute) (memoryStructure,int,unsigned int);
 
-unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,bool*);
-void (*setMemoryAttribute) (memoryStructure,int,unsigned int);
-
-int framesCount;
+int numFrames,numBuckets=100;
 
 int main(int argc, char* argv[]) {
 
@@ -18,7 +16,7 @@ int main(int argc, char* argv[]) {
     FILE *bzipFile,*gccFile;
     unsigned int address,page,offset,frame, counter=0;
     pageHash bzipHash, gccHash;
-    listnode* Node;
+    hashnode* Node;
     bool running,Replacement;
     char type;
 
@@ -29,26 +27,26 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    framesCount=atoi(argv[2]);
+    numFrames=atoi(argv[2]);
     q=atoi(argv[3]);
     if (!strcmp(argv[1],"lru")){
-        replacementAlgorithm = &lru;
-        setMemoryAttribute = &lruSetCounter;
+        memory_replacementAlgorithm = &memory_lru;
+        memory_setMemoryAttribute = &memory_setCounter;
     }
     else if(!strcmp(argv[1],"secondChance")){
-        replacementAlgorithm = &secondChance;
-        setMemoryAttribute = &setReferenceBit;
+        memory_replacementAlgorithm = &memory_secondChance;
+        memory_setMemoryAttribute = &memory_setReferenceBit;
     }
 
     /*Initializing Hashes*/
 
-    bzipHash=pageHashInitialize(NUMBUCKETS);
-    gccHash=pageHashInitialize(NUMBUCKETS);
+    bzipHash=hash_Initialize();
+    gccHash=hash_Initialize();
 
     /*Initializing Main Memory-Frame Holders*/
 
-    memoryFrame memory[framesCount];
-    for (int i=0 ; i<framesCount ; i++) {
+    memoryFrame memory[numFrames];
+    for (int i=0 ; i<numFrames ; i++) {
         memory[i].LRUcounter=0;
         memory[i].referenceBit=0;
     }
@@ -73,13 +71,13 @@ int main(int argc, char* argv[]) {
             page=address>>12;
             offset=address<<20;
 
-            if ((frame=searchPage(page,bzipHash,NUMBUCKETS,&Node))<0) {
+            if ((frame=hash_searchPage(page,bzipHash,&Node))<0) {
 
-                frame=(*replacementAlgorithm)(memory,page,counter,&Replacement);
-                if (Replacement) deletePage(page,bzipHash,NUMBUCKETS);
-                setHashFrame(Node,frame);
+                frame=(*memory_replacementAlgorithm)(memory,page,counter,&Replacement);
+                if (Replacement) hash_removePage(page,bzipHash);
+                hash_setFrame(Node,frame);
             }
-            else (*setMemoryAttribute)(memory,frame,counter);
+            else (*memory_setMemoryAttribute)(memory,frame,counter);
             printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
         }
 
@@ -95,17 +93,17 @@ int main(int argc, char* argv[]) {
             page=address>>12;
             offset=address<<20;
 
-            if ((frame=searchPage(page,gccHash,NUMBUCKETS,&Node))<0) {
+            if ((frame=hash_searchPage(page,gccHash,&Node))<0) {
 
-                frame=(*replacementAlgorithm)(memory,page,counter,&Replacement);
-                if (Replacement) deletePage(page,gccHash,NUMBUCKETS);
-                setHashFrame(Node,frame);
+                frame=(*memory_replacementAlgorithm)(memory,page,counter,&Replacement);
+                if (Replacement) hash_removePage(page,gccHash);
+                hash_setFrame(Node,frame);
             }
-            else (*setMemoryAttribute)(memory,frame,counter);
+            else (*memory_setMemoryAttribute)(memory,frame,counter);
             printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
         }
     }
 
-    pageHashDestroy(gccHash,NUMBUCKETS);
-    pageHashDestroy(bzipHash,NUMBUCKETS);
+    hash_destroy(gccHash);
+    hash_destroy(bzipHash);
 }

@@ -1,28 +1,28 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "memoryStructure.h"
-#include "list.h"
+#include "pageTable.h"
 
-extern int framesCount;
+extern int numFrames;
 
-void lruSetCounter(memoryStructure memory,int frame,unsigned int count) {
+void memory_setCounter(memoryStructure memory,int frame,unsigned int count) {
 
     memory[frame].LRUcounter=count;
     return;
 }
 
-void setReferenceBit(memoryStructure memory, int frame, unsigned int value) {
+void memory_setReferenceBit(memoryStructure memory, int frame, unsigned int value) {
 
     memory[frame].referenceBit=1;
     return;
 }
 
-unsigned int lru(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
+int memory_lru(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
     int minIndex=-1;
     unsigned int minCounter=-1;
 
-    for (int i=0 ; i<framesCount ; i++) {
+    for (int i=0 ; i<numFrames ; i++) {
 
         if (memory[i].LRUcounter<minCounter || minCounter==-1) {
             minIndex=i;
@@ -44,13 +44,13 @@ unsigned int lru(memoryStructure memory,unsigned int page,unsigned int count,boo
     return minIndex;
 }
 
-unsigned int secondChance(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
+int memory_secondChance(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
     static int index=0;
 
     while (memory[index].referenceBit==1){
         memory[index++].referenceBit=0;
-        if (index==framesCount) 
+        if (index==numFrames) 
             index=0;
     }
 

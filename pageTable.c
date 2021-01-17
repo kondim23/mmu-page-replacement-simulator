@@ -1,26 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "list.h"
+#include "pageTable.h"
 #include "memoryStructure.h"
+
+extern int numBuckets;
 
 // extern unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
 // extern void (*setMemoryAttribute) (memoryStructure,int,unsigned int); 
 
-pageHash pageHashInitialize(int numBuckets) {
+pageHash hash_Initialize() {
 
-    pageHash Hash = (pageHash) malloc(sizeof(listnode*)*numBuckets);
+    pageHash Hash = (pageHash) malloc(sizeof(hashnode*)*numBuckets);
     for (int i=0 ; i<numBuckets ; i++) Hash[i]=NULL;
     return Hash;
 }
 
-int hashFunction(unsigned int page) {
+int hash_function(unsigned int page) {
     return 1;
 }
 
-int searchPage(unsigned int page, pageHash Hash, int numBuckets, listnode** node) {
+int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
 
     int key,frameIndex;
-    listnode *currentNode,*lastNode;
+    hashnode *currentNode,*lastNode;
     static unsigned int counter=0;
 
     counter++;
@@ -30,7 +32,7 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, listnode** node
     if (Hash[key]==NULL) {
 
         /*alloc new node*/
-        Hash[key]=(listnode*)malloc(sizeof(listnode));
+        Hash[key]=(hashnode*)malloc(sizeof(hashnode));
         Hash[key]->page=page;
         Hash[key]->nextblock=NULL;
         /*Find proper frame*/
@@ -56,7 +58,7 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, listnode** node
 
     /*node doesnt exist*/
     /*alloc new node*/
-    lastNode->nextblock=(listnode*)malloc(sizeof(listnode));
+    lastNode->nextblock=(hashnode*)malloc(sizeof(hashnode));
     lastNode->nextblock->page=page;
     lastNode->nextblock->nextblock=NULL;
     /*Find proper frame*/
@@ -67,16 +69,16 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, listnode** node
     return -1;
 }
 
-void setHashFrame(listnode* node, int frame) {
+void hash_setFrame(hashnode* node, int frame) {
 
     node->frame=frame;
     return;
 }
 
-int deletePage(unsigned int page, pageHash Hash, int numBuckets) {
+int hash_removePage(unsigned int page, pageHash Hash) {
 
     int key;
-    listnode *currentNode, *lastNode;
+    hashnode *currentNode, *lastNode;
 
     key=hashFunction(page)%numBuckets;
 
@@ -88,7 +90,7 @@ int deletePage(unsigned int page, pageHash Hash, int numBuckets) {
 
 
     if (Hash[key]->page==page) {
-        listnode *temp=Hash[key];
+        hashnode *temp=Hash[key];
         Hash[key]=Hash[key]->nextblock;
         free(temp);
         return 0;
@@ -112,9 +114,9 @@ int deletePage(unsigned int page, pageHash Hash, int numBuckets) {
     return -1;
 }
 
-int pageHashDestroy(pageHash Hash, int numBuckets) {
+int hash_destroy(pageHash Hash) {
 
-    listnode *temp,*current;
+    hashnode *temp,*current;
 
     for (int i=0 ; i<numBuckets ; i++) {
 
