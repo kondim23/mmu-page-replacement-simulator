@@ -46,7 +46,10 @@ int memory_lru(memoryStructure memory,unsigned int page,unsigned int count,bool*
 
 int memory_secondChance(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
-    static int index=0;
+    static int index=-1;
+
+    if (++index==numFrames) 
+        index=0;
 
     while (memory[index].referenceBit==1){
         memory[index++].referenceBit=0;

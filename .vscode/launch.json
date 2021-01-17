@@ -30,7 +30,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["secondChance","1000","3"],
+            "args": ["secondChance","10","3"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
