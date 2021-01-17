@@ -21,11 +21,9 @@ int hash_function(unsigned int page) {
 
 int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
 
-    int key,frameIndex;
+    int key;
     hashnode *currentNode,*lastNode;
-    static unsigned int counter=0;
-
-    counter++;
+    
     key=hashFunction(page)%numBuckets;
 
     /*Alloc first node of list*/
@@ -114,7 +112,7 @@ int hash_removePage(unsigned int page, pageHash Hash) {
     return -1;
 }
 
-int hash_destroy(pageHash Hash) {
+void hash_destroy(pageHash Hash) {
 
     hashnode *temp,*current;
 
@@ -128,6 +126,6 @@ int hash_destroy(pageHash Hash) {
             free(temp);
         }
     }
-
     free(Hash);
+    return;
 }

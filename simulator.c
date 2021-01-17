@@ -5,7 +5,7 @@
 #include "pageTable.h"
 #include "memoryStructure.h"
 
-unsigned int (*memory_replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,bool*);
+int (*memory_replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,bool*);
 void (*memory_setMemoryAttribute) (memoryStructure,int,unsigned int);
 
 int numFrames,numBuckets=100;
@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
 
     memoryFrame memory[numFrames];
     for (int i=0 ; i<numFrames ; i++) {
+        memory[i].page=0;
         memory[i].LRUcounter=0;
         memory[i].referenceBit=0;
     }
@@ -106,4 +107,5 @@ int main(int argc, char* argv[]) {
 
     hash_destroy(gccHash);
     hash_destroy(bzipHash);
+    return 0;
 }
