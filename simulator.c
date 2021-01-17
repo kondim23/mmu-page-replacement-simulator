@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "list.h"
 #include "memoryStructure.h"
 
 #define NUMBUCKETS 100
 
-unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
+unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,bool*);
 void (*setMemoryAttribute) (memoryStructure,int,unsigned int);
 
 int framesCount;
@@ -15,9 +16,10 @@ int main(int argc, char* argv[]) {
 
     int q;
     FILE *bzipFile,*gccFile;
-    unsigned int address,page,offset,frame;
+    unsigned int address,page,offset,frame, counter=0;
     pageHash bzipHash, gccHash;
-    bool running;
+    listnode* Node;
+    bool running,Replacement;
     char type;
 
     /*Checking for proper input.*/
@@ -66,11 +68,18 @@ int main(int argc, char* argv[]) {
                 running=false;
                 continue;
             }
+            counter++;
 
             page=address>>12;
             offset=address<<20;
 
-            frame=searchPage(page,bzipHash,NUMBUCKETS,memory);
+            if ((frame=searchPage(page,bzipHash,NUMBUCKETS,&Node))<0) {
+
+                frame=(*replacementAlgorithm)(memory,page,counter,&Replacement);
+                if (Replacement) deletePage(page,bzipHash,NUMBUCKETS);
+                setHashFrame(Node,frame);
+            }
+            else (*setMemoryAttribute)(memory,frame,counter);
             printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
         }
 
@@ -81,11 +90,18 @@ int main(int argc, char* argv[]) {
                 running=false;
                 continue;
             }
+            counter++;
 
             page=address>>12;
             offset=address<<20;
 
-            frame=searchPage(page,gccHash,NUMBUCKETS,memory);
+            if ((frame=searchPage(page,gccHash,NUMBUCKETS,&Node))<0) {
+
+                frame=(*replacementAlgorithm)(memory,page,counter,&Replacement);
+                if (Replacement) deletePage(page,gccHash,NUMBUCKETS);
+                setHashFrame(Node,frame);
+            }
+            else (*setMemoryAttribute)(memory,frame,counter);
             printf("Physical address: %8x\n",(unsigned int)(frame*4096+offset));
         }
     }

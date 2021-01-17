@@ -1,18 +1,23 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "list.h"
 #include "memoryStructure.h"
 
-extern unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
-extern void (*setMemoryAttribute) (memoryStructure,int,unsigned int); 
+// extern unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
+// extern void (*setMemoryAttribute) (memoryStructure,int,unsigned int); 
 
 pageHash pageHashInitialize(int numBuckets) {
 
-    pageHash bzipHash = (pageHash) malloc(sizeof(listnode*)*numBuckets);
-    for (int i=0 ; i<numBuckets ; i++) bzipHash[i]=NULL;
-    return bzipHash;
+    pageHash Hash = (pageHash) malloc(sizeof(listnode*)*numBuckets);
+    for (int i=0 ; i<numBuckets ; i++) Hash[i]=NULL;
+    return Hash;
 }
 
-int searchPage(unsigned int page, pageHash Hash, int numBuckets, memoryStructure memory) {
+int hashFunction(unsigned int page) {
+    return 1;
+}
+
+int searchPage(unsigned int page, pageHash Hash, int numBuckets, listnode** node) {
 
     int key,frameIndex;
     listnode *currentNode,*lastNode;
@@ -29,8 +34,11 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, memoryStructure
         Hash[key]->page=page;
         Hash[key]->nextblock=NULL;
         /*Find proper frame*/
-        Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
-        return Hash[key]->frame;
+        // Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
+        // return Hash[key]->frame;
+    
+        *node=Hash[key];
+        return -1;
     }
 
     currentNode=Hash[key];
@@ -39,7 +47,7 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, memoryStructure
         if (currentNode->page==page) {
 
             /*probably does something here*/
-            (*setMemoryAttribute)(memory,currentNode->frame,counter);
+            // (*setMemoryAttribute)(memory,currentNode->frame,counter);
             return currentNode->frame;
         }
         lastNode=currentNode;
@@ -52,8 +60,17 @@ int searchPage(unsigned int page, pageHash Hash, int numBuckets, memoryStructure
     lastNode->nextblock->page=page;
     lastNode->nextblock->nextblock=NULL;
     /*Find proper frame*/
-    lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
-    return lastNode->nextblock->frame;
+    // lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
+    // return lastNode->nextblock->frame;
+
+    *node=lastNode->nextblock;
+    return -1;
+}
+
+void setHashFrame(listnode* node, int frame) {
+
+    node->frame=frame;
+    return;
 }
 
 int deletePage(unsigned int page, pageHash Hash, int numBuckets) {

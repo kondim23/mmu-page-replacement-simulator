@@ -1,6 +1,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <stdbool.h>
+
 typedef struct{
 
     unsigned int page;
@@ -10,9 +12,9 @@ typedef struct{
 
 typedef memoryFrame* memoryStructure;
 
-unsigned int lru(memoryStructure,unsigned int,unsigned int,pageHash,int);
+unsigned int lru(memoryStructure,unsigned int,unsigned int,bool*);
 void lruSetCounter(memoryStructure,int,unsigned int);
-unsigned int secondChance(memoryStructure,unsigned int,unsigned int,pageHash,int);
+unsigned int secondChance(memoryStructure,unsigned int,unsigned int,bool*);
 void setReferenceBit(memoryStructure,int,unsigned int);
 
 #endif

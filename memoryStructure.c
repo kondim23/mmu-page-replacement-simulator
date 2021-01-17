@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include "memoryStructure.h"
 #include "list.h"
 
@@ -16,7 +17,7 @@ void setReferenceBit(memoryStructure memory, int frame, unsigned int value) {
     return;
 }
 
-unsigned int lru(memoryStructure memory,unsigned int page,unsigned int count,pageHash Hash, int numBuckets) {
+unsigned int lru(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
     int minIndex=-1;
     unsigned int minCounter=-1;
@@ -31,17 +32,19 @@ unsigned int lru(memoryStructure memory,unsigned int page,unsigned int count,pag
     }
 
     if (memory[minIndex].LRUcounter!=0){
-        if (deletePage(memory[minIndex].page,Hash,numBuckets)<0) {
-            printf("Error in page removal from hash\n");
-            return 1;
-        }
+        // if (deletePage(memory[minIndex].page,Hash,numBuckets)<0) {
+        //     printf("Error in page removal from hash\n");
+        //     return 1;
+        // }
+        *replacement=true;
     }
+    else *replacement=false;
     memory[minIndex].page=page;
     memory[minIndex].LRUcounter=count;
     return minIndex;
 }
 
-unsigned int secondChance(memoryStructure memory,unsigned int page,unsigned int count, pageHash Hash,int numBuckets) {
+unsigned int secondChance(memoryStructure memory,unsigned int page,unsigned int count,bool* replacement) {
 
     static int index=0;
 
@@ -51,10 +54,9 @@ unsigned int secondChance(memoryStructure memory,unsigned int page,unsigned int 
             index=0;
     }
 
-    if (deletePage(memory[index].page,Hash,numBuckets)<0) {
-        printf("Error in page removal from hash\n");
-        return 1;
-    }
+    if (memory[index].page!=0) *replacement=true;
+    else *replacement=false;
+    
     memory[index].page=page;
     memory[index].referenceBit=1;
     return index;
