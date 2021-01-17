@@ -16,5 +16,6 @@ int memory_lru(memoryStructure,unsigned int,unsigned int,bool*);
 void memory_setCounter(memoryStructure,int,unsigned int);
 int memory_secondChance(memoryStructure,unsigned int,unsigned int,bool*);
 void memory_setReferenceBit(memoryStructure,int,unsigned int);
+void memory_referenceBitRefresh(memoryStructure);
 
 #endif

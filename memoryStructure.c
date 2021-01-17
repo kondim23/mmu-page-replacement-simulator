@@ -61,3 +61,9 @@ int memory_secondChance(memoryStructure memory,unsigned int page,unsigned int co
     memory[index].referenceBit=1;
     return index;
 }
+
+void memory_referenceBitRefresh(memoryStructure memory) {
+
+    for (int i=0 ; i<numFrames ; i++) memory[i].referenceBit=0;
+    return;
+}

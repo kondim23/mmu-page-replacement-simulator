@@ -16,7 +16,7 @@ pageHash hash_Initialize() {
 }
 
 int hash_function(unsigned int page) {
-    return 1;
+    return page%numBuckets;
 }
 
 int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
