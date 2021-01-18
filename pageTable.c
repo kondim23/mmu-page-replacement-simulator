@@ -19,7 +19,7 @@ int hash_function(unsigned int page) {
     return page%numBuckets;
 }
 
-int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
+int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node) {
 
     int key;
     hashnode *currentNode,*lastNode;
@@ -32,6 +32,7 @@ int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
         /*alloc new node*/
         Hash[key]=(hashnode*)malloc(sizeof(hashnode));
         Hash[key]->page=page;
+        Hash[key]->type=type;
         Hash[key]->nextblock=NULL;
         /*Find proper frame*/
         // Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
@@ -47,6 +48,7 @@ int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
         if (currentNode->page==page) {
 
             /*probably does something here*/
+            if (currentNode->type!='W') currentNode->type=type;
             // (*setMemoryAttribute)(memory,currentNode->frame,counter);
             return currentNode->frame;
         }
@@ -58,6 +60,7 @@ int hash_searchPage(unsigned int page, pageHash Hash,hashnode** node) {
     /*alloc new node*/
     lastNode->nextblock=(hashnode*)malloc(sizeof(hashnode));
     lastNode->nextblock->page=page;
+    lastNode->nextblock->type=type;
     lastNode->nextblock->nextblock=NULL;
     /*Find proper frame*/
     // lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
@@ -73,25 +76,27 @@ void hash_setFrame(hashnode* node, int frame) {
     return;
 }
 
-int hash_removePage(unsigned int page, pageHash Hash) {
+char hash_removePage(unsigned int page, pageHash Hash) {
 
     int key;
-    hashnode *currentNode, *lastNode;
+    char type;
+    hashnode *currentNode, *lastNode, *temp;
 
     key=hash_function(page)%numBuckets;
 
     /*Checks for empty list*/
     if (Hash[key]==NULL) {
         printf("Error: page not exists in hash\n");
-        return -1;
+        return 1;
     }
 
 
     if (Hash[key]->page==page) {
-        hashnode *temp=Hash[key];
+        temp=Hash[key];
         Hash[key]=Hash[key]->nextblock;
+        type=temp->type;
         free(temp);
-        return 0;
+        return type;
     }
 
     currentNode=Hash[key]->nextblock;
@@ -101,15 +106,16 @@ int hash_removePage(unsigned int page, pageHash Hash) {
         if (currentNode->page==page) {
 
             lastNode->nextblock=currentNode->nextblock;
+            type=currentNode->type;
             free(currentNode);
-            return 0;
+            return type;
         }
         lastNode=currentNode;
         currentNode=currentNode->nextblock;
     }
 
     printf("Error: page not found in hash\n");
-    return -1;
+    return 1;
 }
 
 void hash_destroy(pageHash Hash) {
