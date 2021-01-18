@@ -5,10 +5,10 @@
 #include "pageTable.h"
 #include "memoryStructure.h"
 
-int (*memory_replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash*);
+int (*memory_replacementAlgorithm) (memoryStructure,unsigned int*,unsigned int,pageHash*);
 void (*memory_setMemoryAttribute) (memoryStructure,int,unsigned int);
 
-int numFrames,numBuckets=100;
+int numFrames,numBuckets=1000;
 
 int main(int argc, char* argv[]) {
 
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     /*Checking for proper input.*/
 
-    if (argc!=5 || (strcmp(argv[1],"lru") && strcmp(argv[1],"secondChance")) || atoi(argv[2])<1 || atoi(argv[3])<1 || atoi(argv[4])<1) {
+    if (argc!=5 || (strcmp(argv[1],"lru") && strcmp(argv[1],"secondChance")) || atoi(argv[2])<1 || atoi(argv[3])<1) {
         printf("User did not provide proper arguments.\n");
         return 1;
     }
@@ -66,7 +66,10 @@ int main(int argc, char* argv[]) {
         if (bzipUnfinished)
             for (int i=0 ; i<q ; i++) {
 
-                if (counter>=maxTracesCount) break;
+                if (maxTracesCount>0 && counter>=maxTracesCount) {
+                    running=false;
+                    break;
+                }
                 if (fscanf(bzipFile, "%x %c", &address, &type)==EOF) {
                     if (gccUnfinished==false) running=false;
                     bzipUnfinished=false;
@@ -96,7 +99,10 @@ int main(int argc, char* argv[]) {
         if (gccUnfinished)
             for (int i=0 ; i<q ; i++) {
 
-                if (counter>=maxTracesCount) break;
+                if (maxTracesCount>0 && counter>=maxTracesCount) {
+                    running=false;
+                    break;
+                }
                 if (fscanf(gccFile, "%x %c", &address, &type)==EOF) {
                     if (bzipUnfinished==false) running=false;
                     gccUnfinished=false;
@@ -123,9 +129,9 @@ int main(int argc, char* argv[]) {
             }
     }
 
-    printf("Pages read from disk: %d\nPages written to disk: %d\nPage Faults: %d\nBzip Traces used: %d\n Gcc Traces used: %d\nFrames Count: %d\n",\
+    writeCount+= hash_destroy(gccHash) + hash_destroy(bzipHash);
+
+    printf("Pages read from disk: %d\nPages written to disk: %d\nPage Faults: %d\nBzip Traces used: %d\nGcc  Traces used: %d\nFrames Count: %d\n",\
         readCount,writeCount,pageFaultCount,bzipTracesCount,gccTracesCount,numFrames);
-    hash_destroy(gccHash);
-    hash_destroy(bzipHash);
     return 0;
 }

@@ -118,20 +118,22 @@ char hash_removePage(unsigned int page, pageHash Hash) {
     return 1;
 }
 
-void hash_destroy(pageHash Hash) {
+int hash_destroy(pageHash Hash) {
 
     hashnode *temp,*current;
+    int writec=0;
 
     for (int i=0 ; i<numBuckets ; i++) {
 
         current=Hash[i];
         while (current!=NULL) {
 
+            if (current->type=='W') writec++;
             temp=current;
             current=current->nextblock;
             free(temp);
         }
     }
     free(Hash);
-    return;
+    return writec;
 }
