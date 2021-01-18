@@ -4,19 +4,17 @@
 #include "pageTable.h"
 
 typedef struct{
-
-    unsigned int page;
-    unsigned int LRUcounter;
-    char referenceBit;
+    hashnode *page;
+    char dirtyBit;
     pageHash Hash;
 }memoryFrame;
 
 typedef memoryFrame* memoryStructure;
 
-int memory_lru(memoryStructure,unsigned int*,unsigned int,pageHash*);
-void memory_setCounter(memoryStructure,int,unsigned int);
-int memory_secondChance(memoryStructure,unsigned int*,unsigned int,pageHash*);
-void memory_setReferenceBit(memoryStructure,int,unsigned int);
+int memory_lru(memoryStructure,hashnode**,unsigned int,pageHash*,char);
+void memory_setDirtyBit(memoryStructure,int,char);
+int memory_secondChance(memoryStructure,hashnode**,unsigned int,pageHash*,char);
 void memory_referenceBitRefresh(memoryStructure);
+int memory_getActiveDirtyBitCount(memoryStructure );
 
 #endif

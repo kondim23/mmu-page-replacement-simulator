@@ -19,7 +19,7 @@ int hash_function(unsigned int page) {
     return page%numBuckets;
 }
 
-int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node) {
+int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node,unsigned int counter) {
 
     int key;
     hashnode *currentNode,*lastNode;
@@ -32,7 +32,8 @@ int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node)
         /*alloc new node*/
         Hash[key]=(hashnode*)malloc(sizeof(hashnode));
         Hash[key]->page=page;
-        Hash[key]->type=type;
+        Hash[key]->LRUcounter=counter;
+        Hash[key]->referenceBit=1;
         Hash[key]->nextblock=NULL;
         /*Find proper frame*/
         // Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
@@ -48,8 +49,9 @@ int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node)
         if (currentNode->page==page) {
 
             /*probably does something here*/
-            if (currentNode->type!='W') currentNode->type=type;
             // (*setMemoryAttribute)(memory,currentNode->frame,counter);
+            currentNode->LRUcounter=counter;
+            currentNode->referenceBit=1;
             return currentNode->frame;
         }
         lastNode=currentNode;
@@ -60,7 +62,8 @@ int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node)
     /*alloc new node*/
     lastNode->nextblock=(hashnode*)malloc(sizeof(hashnode));
     lastNode->nextblock->page=page;
-    lastNode->nextblock->type=type;
+    lastNode->nextblock->LRUcounter=counter;
+    lastNode->nextblock->referenceBit=1;
     lastNode->nextblock->nextblock=NULL;
     /*Find proper frame*/
     // lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
@@ -76,7 +79,7 @@ void hash_setFrame(hashnode* node, int frame) {
     return;
 }
 
-char hash_removePage(unsigned int page, pageHash Hash) {
+int hash_removePage(unsigned int page, pageHash Hash) {
 
     int key;
     char type;
@@ -87,16 +90,15 @@ char hash_removePage(unsigned int page, pageHash Hash) {
     /*Checks for empty list*/
     if (Hash[key]==NULL) {
         printf("Error: page not exists in hash\n");
-        return 1;
+        return -1;
     }
 
 
     if (Hash[key]->page==page) {
         temp=Hash[key];
         Hash[key]=Hash[key]->nextblock;
-        type=temp->type;
         free(temp);
-        return type;
+        return 0;
     }
 
     currentNode=Hash[key]->nextblock;
@@ -106,16 +108,15 @@ char hash_removePage(unsigned int page, pageHash Hash) {
         if (currentNode->page==page) {
 
             lastNode->nextblock=currentNode->nextblock;
-            type=currentNode->type;
             free(currentNode);
-            return type;
+            return 0;
         }
         lastNode=currentNode;
         currentNode=currentNode->nextblock;
     }
 
     printf("Error: page not found in hash\n");
-    return 1;
+    return -1;
 }
 
 int hash_destroy(pageHash Hash) {
@@ -128,7 +129,6 @@ int hash_destroy(pageHash Hash) {
         current=Hash[i];
         while (current!=NULL) {
 
-            if (current->type=='W') writec++;
             temp=current;
             current=current->nextblock;
             free(temp);
@@ -136,4 +136,20 @@ int hash_destroy(pageHash Hash) {
     }
     free(Hash);
     return writec;
+}
+
+void hash_referenceBitRefresh(hashnode* page) {
+    if (page!=NULL) page->referenceBit=0;
+    return;
+}
+
+int hash_getReferenceBit(hashnode* page) {
+    if (page!=NULL) return page->referenceBit;
+    else return 0;
+}
+
+unsigned int hash_getLRUcounter(hashnode* page) {
+
+    if (page!=NULL) return page->LRUcounter;
+    else return 0;
 }

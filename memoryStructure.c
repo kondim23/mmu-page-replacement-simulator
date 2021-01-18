@@ -4,32 +4,30 @@
 #include "pageTable.h"
 
 extern int numFrames;
+extern unsigned int writeCount;
 
-void memory_setCounter(memoryStructure memory,int frame,unsigned int count) {
+void memory_setDirtyBit(memoryStructure memory,int frame,char type) {
 
-    memory[frame].LRUcounter=count;
+    if (memory[frame].dirtyBit!=1 && type=='W') memory[frame].dirtyBit=1;
     return;
 }
 
-void memory_setReferenceBit(memoryStructure memory, int frame, unsigned int value) {
-
-    memory[frame].referenceBit=1;
-    return;
-}
-
-int memory_lru(memoryStructure memory,unsigned int *page,unsigned int count,pageHash* Hash) {
+int memory_lru(memoryStructure memory,hashnode **page,unsigned int count,pageHash* Hash,char type) {
 
     int minIndex=-1;
-    unsigned int minCounter=0,tempPage;
+    unsigned int minCounter=0,LRUcounter;
+    hashnode* tempPage;
     pageHash tempHash;
 
 
     for (int i=0 ; i<numFrames ; i++) {
 
-        if (memory[i].LRUcounter<=minCounter || minIndex==-1) {
+        LRUcounter=hash_getLRUcounter(memory[i].page);
+
+        if (LRUcounter<=minCounter || minIndex==-1) {
             minIndex=i;
-            minCounter=memory[i].LRUcounter;
-            if (memory[i].LRUcounter==0) break;
+            minCounter=LRUcounter;
+            if (LRUcounter==0) break;
         }
     }
 
@@ -42,6 +40,8 @@ int memory_lru(memoryStructure memory,unsigned int *page,unsigned int count,page
     // }
     // else *Hash=NULL;
 
+    if (memory[minIndex].dirtyBit==1) writeCount++;
+
     tempPage=memory[minIndex].page;
     memory[minIndex].page=*page;
     *page=tempPage;
@@ -50,21 +50,25 @@ int memory_lru(memoryStructure memory,unsigned int *page,unsigned int count,page
     memory[minIndex].Hash=*Hash;
     *Hash=tempHash;
 
-    memory[minIndex].LRUcounter=count;
+    if (type=='W') memory[minIndex].dirtyBit=1;
+    else memory[minIndex].dirtyBit=0;
+    
+    // memory[minIndex].page->LRUcounter=count;
     return minIndex;
 }
 
-int memory_secondChance(memoryStructure memory,unsigned int *page,unsigned int count,pageHash* Hash) {
+int memory_secondChance(memoryStructure memory,hashnode **page,unsigned int count,pageHash* Hash,char type) {
 
     static int index=-1;
-    unsigned int tempPage;
+    hashnode* tempPage;
     pageHash tempHash;
 
     if (++index==numFrames) 
         index=0;
 
-    while (memory[index].referenceBit==1){
-        memory[index++].referenceBit=0;
+    while (hash_getReferenceBit(memory[index].page)==1){
+        hash_referenceBitRefresh(memory[index].page);
+        index++;
         if (index==numFrames) 
             index=0;
     }
@@ -80,12 +84,19 @@ int memory_secondChance(memoryStructure memory,unsigned int *page,unsigned int c
     memory[index].Hash=*Hash;
     *Hash=tempHash;
     
-    memory[index].referenceBit=1;
     return index;
 }
 
 void memory_referenceBitRefresh(memoryStructure memory) {
 
-    for (int i=0 ; i<numFrames ; i++) memory[i].referenceBit=0;
+    for (int i=0 ; i<numFrames ; i++) hash_referenceBitRefresh(memory[i].page);
     return;
+}
+
+int memory_getActiveDirtyBitCount(memoryStructure memory) {
+
+    int count=0;
+
+    for (int i=0 ; i<numFrames ; i++) if (memory[i].dirtyBit==1) count++;
+    return count;
 }
