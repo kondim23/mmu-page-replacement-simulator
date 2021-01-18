@@ -73,6 +73,8 @@ int memory_secondChance(memoryStructure memory,hashnode **page,unsigned int coun
             index=0;
     }
 
+    if (memory[index].dirtyBit==1) writeCount++;
+
     // if (memory[index].page!=0) *Hash=memory[index].Hash;
     // else *Hash=NULL;
     

@@ -133,6 +133,8 @@ int main(int argc, char* argv[]) {
 
     hash_destroy(gccHash);
     hash_destroy(bzipHash);
+    fclose(gccFile);
+    fclose(bzipFile);
     printf("Pages read from disk: %d\nPages written to disk: %d\nPage Faults: %d\nBzip Traces used: %d\nGcc  Traces used: %d\nFrames Count: %d\n",\
         readCount,writeCount,pageFaultCount,bzipTracesCount,gccTracesCount,numFrames);
     return 0;
