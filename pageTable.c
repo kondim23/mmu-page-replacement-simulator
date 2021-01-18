@@ -5,17 +5,16 @@
 
 extern int numBuckets;
 
-// extern unsigned int (*replacementAlgorithm) (memoryStructure,unsigned int,unsigned int,pageHash,int);
-// extern void (*setMemoryAttribute) (memoryStructure,int,unsigned int); 
-
 pageHash hash_Initialize() {
 
+    /*Allocate a hash of hashnode pointers*/
     pageHash Hash = (pageHash) malloc(sizeof(hashnode*)*numBuckets);
     for (int i=0 ; i<numBuckets ; i++) Hash[i]=NULL;
     return Hash;
 }
 
 int hash_function(unsigned int page) {
+    /*Modulo hash funtion*/
     return page%numBuckets;
 }
 
@@ -26,56 +25,60 @@ int hash_searchPage(unsigned int page, pageHash Hash,char type, hashnode** node,
     
     key=hash_function(page)%numBuckets;
 
-    /*Alloc first node of list*/
+    /*In case of empty bucket*/
     if (Hash[key]==NULL) {
 
-        /*alloc new node*/
+        /*allocate new node*/
         Hash[key]=(hashnode*)malloc(sizeof(hashnode));
+
         Hash[key]->page=page;
         Hash[key]->LRUcounter=counter;
         Hash[key]->referenceBit=1;
         Hash[key]->nextblock=NULL;
-        /*Find proper frame*/
-        // Hash[key]->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
-        // return Hash[key]->frame;
-    
+
+        /*return a pointer to this hashnode*/
         *node=Hash[key];
+
+        /*Page didnt exist in hash -> returns "frame"=-1*/
         return -1;
     }
 
+    /*Navigate in bucket*/
     currentNode=Hash[key];
     while (currentNode!=NULL) {
 
+        /*Desired page found*/
         if (currentNode->page==page) {
 
-            /*probably does something here*/
-            // (*setMemoryAttribute)(memory,currentNode->frame,counter);
+            /*Updating counter, referenceBit for LRU, secondChance*/
             currentNode->LRUcounter=counter;
             currentNode->referenceBit=1;
+            /*Page existed -> return frame*/
             return currentNode->frame;
         }
         lastNode=currentNode;
         currentNode=currentNode->nextblock;
     }
 
-    /*node doesnt exist*/
-    /*alloc new node*/
+    /*Page not in bucket -> Allocate a new hashnode for page*/
     lastNode->nextblock=(hashnode*)malloc(sizeof(hashnode));
+
     lastNode->nextblock->page=page;
     lastNode->nextblock->LRUcounter=counter;
     lastNode->nextblock->referenceBit=1;
     lastNode->nextblock->nextblock=NULL;
-    /*Find proper frame*/
-    // lastNode->nextblock->frame=(*replacementAlgorithm)(memory,page,counter,Hash,numBuckets);
-    // return lastNode->nextblock->frame;
 
+    /*return a pointer to this hashnode*/
     *node=lastNode->nextblock;
+
+    /*Page didnt exist in hash -> returns "frame"=-1*/
     return -1;
 }
 
-void hash_setFrame(hashnode* node, int frame) {
+void hash_setFrame(hashnode* page, int frame) {
 
-    node->frame=frame;
+    /*Set frame of page equal to frame given*/
+    page->frame=frame;
     return;
 }
 
@@ -93,7 +96,7 @@ int hash_removePage(unsigned int page, pageHash Hash) {
         return -1;
     }
 
-
+    /*Page is the first hashnode of bucket*/
     if (Hash[key]->page==page) {
         temp=Hash[key];
         Hash[key]=Hash[key]->nextblock;
@@ -101,12 +104,14 @@ int hash_removePage(unsigned int page, pageHash Hash) {
         return 0;
     }
 
+    /*We navigate in bucket*/
     currentNode=Hash[key]->nextblock;
     lastNode=Hash[key];
     while (currentNode!=NULL) {
 
         if (currentNode->page==page) {
 
+            /*Desired page found*/
             lastNode->nextblock=currentNode->nextblock;
             free(currentNode);
             return 0;
@@ -127,6 +132,7 @@ int hash_destroy(pageHash Hash) {
     for (int i=0 ; i<numBuckets ; i++) {
 
         current=Hash[i];
+        /*free all hashnodes of bucket i*/
         while (current!=NULL) {
 
             temp=current;
@@ -134,22 +140,30 @@ int hash_destroy(pageHash Hash) {
             free(temp);
         }
     }
+    /*free hash*/
     free(Hash);
     return writec;
 }
 
-void hash_referenceBitRefresh(hashnode* page) {
+void hash_setReferenceBitZero(hashnode* page) {
+    /*Sets reference bit of page to 0*/
     if (page!=NULL) page->referenceBit=0;
     return;
 }
 
 int hash_getReferenceBit(hashnode* page) {
+    /*return reference bit of page*/
     if (page!=NULL) return page->referenceBit;
     else return 0;
 }
 
 unsigned int hash_getLRUcounter(hashnode* page) {
-
+    /*return LRUCounter of page*/
     if (page!=NULL) return page->LRUcounter;
     else return 0;
+}
+
+unsigned int hash_getPage(hashnode *pageptr) {
+    /*return pageId*/
+    return pageptr->page;
 }

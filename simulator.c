@@ -5,7 +5,8 @@
 #include "pageTable.h"
 #include "memoryStructure.h"
 
-int (*memory_replacementAlgorithm) (memoryStructure,hashnode**,unsigned int,pageHash*,char);
+/*Holds lru or secondChance functions*/
+int (*memory_replacementAlgorithm) (memoryStructure,hashnode**,pageHash*,char);
 
 int numFrames,numBuckets=100;
 unsigned int writeCount=0;
@@ -14,15 +15,18 @@ int main(int argc, char* argv[]) {
 
     int q,frame,memory_referenceBitTimer;
     FILE *bzipFile,*gccFile;
-    unsigned int address,page,offset, counter=0, maxTracesCount, readCount=0, pageFaultCount=0, bzipTracesCount=0, gccTracesCount=0;
-    pageHash bzipHash, gccHash, Hash;
-    hashnode *Node,*pageNode;
+    unsigned int address,pageId,offset, counter=0, maxTracesCount, readCount=0,\
+     pageFaultCount=0, bzipTracesCount=0, gccTracesCount=0;
+    pageHash bzipHash, gccHash, hashPtr;
+    hashnode *pagePtr,*insertedPage;
     bool running=true,gccUnfinished=true,bzipUnfinished=true,secondChance=false;
-    char type;
+    char mode;
+
 
     /*Checking for proper input.*/
 
-    if (argc!=5 || (strcmp(argv[1],"lru") && strcmp(argv[1],"secondChance")) || atoi(argv[2])<1 || atoi(argv[3])<1) {
+    if (argc!=5 || (strcmp(argv[1],"lru") && strcmp(argv[1],"secondChance")) ||\
+     atoi(argv[2])<1 || atoi(argv[3])<1) {
         printf("User did not provide proper arguments.\n");
         return 1;
     }
@@ -39,10 +43,12 @@ int main(int argc, char* argv[]) {
         secondChance=true;
     }
 
+
     /*Initializing Hashes*/
 
     bzipHash=hash_Initialize();
     gccHash=hash_Initialize();
+
 
     /*Initializing Main Memory-Frame Holders*/
 
@@ -52,6 +58,8 @@ int main(int argc, char* argv[]) {
         memory[i].Hash=NULL;
         memory[i].dirtyBit=0;
     }
+
+
     /*Opening trace files*/
 
     bzipFile=fopen("bzip.trace","r");
@@ -63,79 +71,138 @@ int main(int argc, char* argv[]) {
         if (bzipUnfinished)
             for (int i=0 ; i<q ; i++) {
 
+                /*Limit of traces count by user reached*/
                 if (maxTracesCount>0 && counter>=maxTracesCount) {
                     running=false;
                     break;
                 }
-                if (fscanf(bzipFile, "%x %c", &address, &type)==EOF) {
+
+                /*Receiving a trace from bzip trace file */
+                if (fscanf(bzipFile, "%x %c", &address, &mode)==EOF) {
                     if (gccUnfinished==false) running=false;
                     bzipUnfinished=false;
                     break;
                 }
                 counter++;
                 bzipTracesCount++;
+
+                /*Set all Reference bits to 0 every numTraces/3 traces in case of secondChance*/
                 if (secondChance && counter%memory_referenceBitTimer==0) 
                     memory_referenceBitRefresh(memory);
 
-                page=address>>12;
+                /*offset is defined by the last 12 bits of address (2^12=4096)*/
+                /*pageId is defined by the remaining bits (20 leftmost bits)*/
+                pageId=address>>12;
                 offset=address<<20>>20;
 
-                if ((frame=hash_searchPage(page,bzipHash,type,&Node,counter))<0) {
+                /*Add the page in bzip hash if it doesnt exist*/
+                /*pagePtr is a ptr to the page-node in hash*/
+                if ((frame=hash_searchPage(pageId,bzipHash,mode,&pagePtr,counter))<0) {
 
+                    /*frame==-1 --> page doesnt exist in hash*/
+                    /*we read the page from disk (readCount++)*/
+                    /*as we received page fault (pageFaultCount++)*/
                     readCount++;
                     pageFaultCount++;
-                    Hash=bzipHash;
-                    pageNode=Node;
-                    frame=(*memory_replacementAlgorithm)(memory,&Node,counter,&Hash,type);
-                    if (Hash!=NULL) hash_removePage(Node->page,Hash);
-                    hash_setFrame(pageNode,frame);
+
+                    hashPtr=bzipHash;
+                    insertedPage=pagePtr;
+
+                    /*Find a proper position in memory for current page via lru or secondChance*/
+                    
+                    /*before memory_replacementAlgorithm():*/
+                    /*pagePtr==pointer to current page, hashPtr==pointer to bzip hash*/
+                    frame=(*memory_replacementAlgorithm)(memory,&pagePtr,&hashPtr,mode);
+
+                    /*after memory_replacementAlgorithm():*/
+                    /*pagePtr==page to remove, hashPtr==hash that holds page to remove*/
+                    
+                    /*If a page existed on the used frame remove it*/
+                    if (hashPtr!=NULL) hash_removePage(hash_getPage(pagePtr),hashPtr);
+                    hash_setFrame(insertedPage,frame);
                 }
-                else memory_setDirtyBit(memory,frame,type);
-                printf("Process: bzip\tTrace: %08x %c Physical address: %08x\n",address,type,(unsigned int)((unsigned int)frame*(unsigned int)4096+offset));
+                /*frame>0 --> page exists in hash*/
+                /*Set dirty bit if needed*/
+                else memory_setDirtyBit(memory,frame,mode);
+
+                printf("Process: bzip\tTrace: %08x %c Physical address: %08x\n",address,mode,\
+                (unsigned int)((unsigned int)frame*(unsigned int)4096+offset));
             }
 
         /*q traces for gcc*/
         if (gccUnfinished)
             for (int i=0 ; i<q ; i++) {
 
+                /*Limit of traces count by user reached*/
                 if (maxTracesCount>0 && counter>=maxTracesCount) {
                     running=false;
                     break;
                 }
-                if (fscanf(gccFile, "%x %c", &address, &type)==EOF) {
+
+                /*Receiving a trace from gcc trace file */
+                if (fscanf(gccFile, "%x %c", &address, &mode)==EOF) {
                     if (bzipUnfinished==false) running=false;
                     gccUnfinished=false;
                     break;
                 }
                 counter++;
                 gccTracesCount++;
-                if (secondChance && counter%memory_referenceBitTimer==0) memory_referenceBitRefresh(memory);
 
-                page=address>>12;
+                /*Set all Reference bits to 0 every numTraces/3 traces in case of secondChance*/
+                if (secondChance && counter%memory_referenceBitTimer==0) 
+                    memory_referenceBitRefresh(memory);
+
+                /*offset is defined by the last 12 bits of address (2^12=4096)*/
+                /*pageId is defined by the remaining bits (20 leftmost bits)*/
+                pageId=address>>12;
                 offset=address<<20>>20;
 
-                if ((frame=hash_searchPage(page,gccHash,type,&Node,counter))<0) {
+                /*Add the page in gcc hash if it doesnt exist*/
+                /*pagePtr is a ptr to the page-node in hash*/
+                if ((frame=hash_searchPage(pageId,gccHash,mode,&pagePtr,counter))<0) {
 
+                    /*frame==-1 --> page doesnt exist in hash*/
+                    /*we read the page from disk (readCount++)*/
+                    /*as we received page fault (pageFaultCount++)*/
                     readCount++;
                     pageFaultCount++;
-                    Hash=gccHash;
-                    pageNode=Node;
-                    frame=(*memory_replacementAlgorithm)(memory,&Node,counter,&Hash,type);
-                    if (Hash!=NULL) hash_removePage(Node->page,Hash);
-                    hash_setFrame(pageNode,frame);
+
+                    hashPtr=gccHash;
+                    insertedPage=pagePtr;
+
+                    /*Find a proper position in memory for current page via lru or secondChance*/
+                    
+                    /*before memory_replacementAlgorithm():*/
+                    /*pagePtr==pointer to current page, hashPtr==pointer to gcc hash*/
+                    frame=(*memory_replacementAlgorithm)(memory,&pagePtr,&hashPtr,mode);
+                    /*after memory_replacementAlgorithm():*/
+                    /*pagePtr==page to remove, hashPtr==hash that holds page to remove*/
+                    
+                    /*If a page existed on the used frame remove it*/
+                    if (hashPtr!=NULL) hash_removePage(hash_getPage(pagePtr),hashPtr);
+                    hash_setFrame(insertedPage,frame);
                 }
-                else memory_setDirtyBit(memory,frame,type);
-                printf("Process: gcc\tTrace: %08x %c Physical address: %08x\n",address,type,(unsigned int)((unsigned int)frame*(unsigned int)4096+offset));
+                /*frame>0 --> page exists in hash*/
+                /*Set dirty bit if needed*/
+                else memory_setDirtyBit(memory,frame,mode);
+
+                printf("Process: gcc\tTrace: %08x %c Physical address: %08x\n",address,mode,\
+                (unsigned int)((unsigned int)frame*(unsigned int)4096+offset));
             }
     }
 
+    /*Write the remaining pages in disk*/
     writeCount+= memory_getActiveDirtyBitCount(memory);
 
+    /*Destroy hashes - close files*/
     hash_destroy(gccHash);
     hash_destroy(bzipHash);
     fclose(gccFile);
     fclose(bzipFile);
-    printf("Pages read from disk: %d\nPages written to disk: %d\nPage Faults: %d\nBzip Traces used: %d\nGcc  Traces used: %d\nFrames Count: %d\n",\
+
+    printf("Pages read from disk: %d\nPages written to disk: %d\nPage Faults: \
+    %d\nBzip Traces used: %d\nGcc  Traces used: %d\nFrames Count: %d\n",\
         readCount,writeCount,pageFaultCount,bzipTracesCount,gccTracesCount,numFrames);
+
     return 0;
 }
