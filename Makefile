@@ -1,9 +1,22 @@
-OBJS	= simulator.o pageTable.o memoryStructure.o
-CC		= gcc
-EXEC	= simulator
+SRCS = src/simulator.c src/pageTable.c src/memoryStructure.c
+OBJS = build/simulator.o build/pageTable.o build/memoryStructure.o
+CC = gcc
+CFLAGS = -Iinclude
+EXEC = bin/simulator
 
-$(EXEC):$(OBJS)
-	$(CC) -o $(EXEC) $(OBJS)
+all: $(EXEC)
+
+$(EXEC): $(OBJS) | bin
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS)
+
+build/%.o: src/%.c | build
+	$(CC) $(CFLAGS) -c $< -o $@
+
+build:
+	@mkdir -p build
+
+bin:
+	@mkdir -p bin
 
 clean:
-	rm -f $(OBJS) $(EXEC)
+	rm -rf build bin

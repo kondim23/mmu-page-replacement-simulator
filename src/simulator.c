@@ -62,8 +62,8 @@ int main(int argc, char* argv[]) {
 
     /*Opening trace files*/
 
-    bzipFile=fopen("bzip.trace","r");
-    gccFile=fopen("gcc.trace","r");
+    bzipFile=fopen("./data/bzip.trace","r");
+    gccFile=fopen("./data/gcc.trace","r");
 
     while (running) {
 
